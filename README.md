@@ -22,13 +22,17 @@ fmralign requires a Python installation and the following dependencies:
 
 Open a terminal window, go the location where you want to install it. Then run:
 
-```git clone
+```
+git clone
 cd fmralign/
-pip install -e .```
+pip install -e .
+```
 
 If you plan to use optimal transport based method, you should also run:
 
-```pip install POT```
+```
+pip install POT
+```
 
 You're up and running!
 
