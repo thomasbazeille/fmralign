@@ -34,13 +34,13 @@ REQUIRED_MODULE_METADATA = (
         'required_at_installation': True,
         'install_info': _FMRALIGN_INSTALL_MSG}),
     ('scipy', {
-        'min_version': '0.17',
+        'min_version': '0.19',
         'required_at_installation': True,
         'install_info': _FMRALIGN_INSTALL_MSG}),
     ('sklearn', {
         'pypi_name': 'scikit-learn',
         'required_at_installation': True,
-        'min_version': '0.18',
+        'min_version': '0.19',
         'install_info': _FMRALIGN_INSTALL_MSG}),
     ('nibabel', {
         'min_version': '2.0.2',
