@@ -5,4 +5,29 @@ This library is meant to be a light-weight Python library that handles functiona
 
 Alternative implementations of these ideas can be found in the pymvpa (http://www.pymvpa.org) or brainiak (http://brainiak.org) packages.
 
+## Getting Started
 
+### Installing
+
+Open a terminal window, go the location where you want to install it. Then run:
+
+git clone
+cd fmralign/
+pip install -e .
+
+You're up and running. If you plan to use optimal transport based method,
+
+### Documentation
+
+You can found an introduction about functional alignment here. Then this and this example.
+
+## License
+
+This project is licensed under the Simplified BSD License.
+
+## Acknowledgments
+
+This project has received funding from the European Union’s Horizon
+2020 Research and Innovation Programme under Grant Agreement No. 785907
+(HBP SGA2).
+This project was supported by Digiteo (www.digiteo.fr).
