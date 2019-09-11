@@ -23,7 +23,7 @@ fmralign requires a Python installation and the following dependencies:
 Open a terminal window, go the location where you want to install it. Then run:
 
 ```
-git clone
+git clone https://github.com/Parietal-INRIA/fmralign.git
 cd fmralign/
 pip install -e .
 ```
