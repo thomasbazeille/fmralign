@@ -15,6 +15,83 @@ from sklearn.linear_model import RidgeCV
 from joblib import Parallel, delayed
 import warnings
 
+from nilearn._utils.niimg import _safe_get_data
+from sklearn.feature_extraction.image import grid_to_graph
+
+
+def find_n_neighborhood(n, mask):
+    """Number of voxels separating at most two connected voxels
+    """
+    mask_data = _safe_get_data(load_img(mask)).astype(np.bool)
+    mask_shape = mask_data.shape
+    six_connectivity = grid_to_graph(n_x=mask_shape[0] * 3, n_y=mask_shape[1] * 3,
+                                     n_z=mask_shape[2] * 3, mask=mask_data).tocsr()
+    n_neighborhood = six_connectivity ** n
+    n_neighborhood.data[:] = 1
+    return n_neighborhood
+
+
+def sparsified_kernel(M, reg, sparsity_model):
+    """
+    Creates Sinkhorn sparsified kernel from cost matrix M and sparsity model
+    sparsity_structure should be a sparse matrice with coefficient between 0 and 1 that will serve to decrease kernel points.
+    for now we also need sparsity_ones which is like sparsity_structure
+    """
+    sparse_ones = sparsity_model.copy()
+    sparse_ones.data[:] = 1
+    sparse_M = sparse_ones.multiply(M)
+    return sparsity_model.multiply(sparse_M.multiply(-1 / reg).expm1() + sparse_ones)
+
+
+def sparse_sinkhorn(a, b, sparse_K, numItermax=1000,
+                    stopThr=1e-9, **kwargs):
+    r"""
+
+    """
+
+    a = np.asarray(a, dtype=np.float64)
+    b = np.asarray(b, dtype=np.float64)
+
+    # init data
+    dim_a = len(a)
+    dim_b = len(b)
+
+    # we assume that no distances are null except those of the diagonal of distances
+
+    u = np.ones(dim_a) / dim_a
+    v = np.ones(dim_b) / dim_b
+
+    tmp2 = np.empty(b.shape, dtype=sparse_K.dtype)
+
+    Kp = sparse_K.multiply((1 / a).reshape(-1, 1))
+
+    cpt = 0
+    err = 1
+    while (err > stopThr and cpt < numItermax):
+        uprev = u
+        vprev = v
+
+        KtransposeU = sparse_K.T.dot(u)
+        v = np.divide(b, KtransposeU)
+        u = 1. / Kp.dot(v)
+
+        if (np.any(KtransposeU == 0)
+                or np.any(np.isnan(u)) or np.any(np.isnan(v))
+                or np.any(np.isinf(u)) or np.any(np.isinf(v))):
+            print('Warning: numerical errors at iteration', cpt)
+            u = uprev
+            v = vprev
+            break
+
+        # np.einsum('i,ij,j->j', u, K, v, out=tmp2)
+        tmp2 = diags(u).dot(sparse_K).dot(
+            diags(v)).sum(axis=0)
+
+        err = np.linalg.norm(tmp2 - b)  # violation of marginal
+        cpt = cpt + 1
+
+    return sparse_K.multiply(u.reshape((-1, 1))).multiply(v.reshape((1, -1)))
+
 
 def scaled_procrustes(X, Y, scaling=False, primal=None):
     """Compute a mixing matrix R and a scaling sc such that Frobenius norm
