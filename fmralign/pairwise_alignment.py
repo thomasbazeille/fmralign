@@ -13,7 +13,7 @@ from nilearn.input_data.masker_validation import check_embedded_nifti_masker
 from nilearn.image import load_img, concat_imgs, index_img
 import nibabel as nib
 from fmralign.alignment_methods import RidgeAlignment, Identity, Hungarian, \
-    ScaledOrthogonalAlignment, OptimalTransportAlignment, DiagonalAlignment
+    ScaledOrthogonalAlignment, OptimalTransportAlignment, DiagonalAlignment, SparseOptimalTransportAlignment
 from fmralign._utils import _make_parcellation, piecewise_transform, _intersect_clustering_mask
 
 # n_pieces should be one
