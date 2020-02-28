@@ -14,7 +14,7 @@ from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.linear_model import RidgeCV
 from joblib import Parallel, delayed
 import warnings
-
+from nilearn.image import load_img
 from nilearn._utils.niimg import _safe_get_data
 from sklearn.feature_extraction.image import grid_to_graph
 
@@ -31,16 +31,17 @@ def find_n_neighborhood(n, mask):
     return n_neighborhood
 
 
-def sparsified_kernel(M, reg, sparsity_model):
+def find_kernel(X, Y, reg, sparsity_model):
     """
     Creates Sinkhorn sparsified kernel from cost matrix M and sparsity model
     sparsity_structure should be a sparse matrice with coefficient between 0 and 1 that will serve to decrease kernel points.
     for now we also need sparsity_ones which is like sparsity_structure
     """
-    sparse_ones = sparsity_model.copy()
-    sparse_ones.data[:] = 1
-    sparse_M = sparse_ones.multiply(M)
-    return sparsity_model.multiply(sparse_M.multiply(-1 / reg).expm1() + sparse_ones)
+    kernel = sparsity_model.tocoo()
+    distances = np.asarray([np.linalg.norm(X[:, i] - Y[:, j])
+                            for i, j in zip(kernel.col, kernel.row)])
+    kernel.data = np.exp(-distances / (distances.mean() * reg))
+    return kernel.tocsr()
 
 
 def sparse_sinkhorn(a, b, sparse_K, numItermax=1000,
@@ -468,3 +469,54 @@ class OptimalTransportAlignment(Alignment):
         """Transform X using optimal coupling computed during fit.
         """
         return X.dot(self.R)
+
+
+class SparseOptimalTransportAlignment(Alignment):
+    '''Compute the optimal coupling between X and Y with entropic regularization.
+
+    Parameters
+    ----------
+    solver : str (optional)
+        solver from POT called to find optimal coupling 'sinkhorn', \
+        'greenkhorn', 'sinkhorn_stabilized','sinkhorn_epsilon_scaling', 'exact' \
+        see POT/ot/bregman on Github for source code of solvers
+    metric : str(optional)
+        metric used to create transport cost matrix, \
+        see full list in scipy.spatial.distance.cdist doc
+    reg : int (optional)
+        level of entropic regularization
+
+    Attributes
+    ----------
+    R : scipy.sparse.csr_matrix
+        Mixing matrix containing the optimal permutation
+    '''
+
+    def __init__(self, mask, n_neighborhood=9, metric='euclidean', reg=1):
+        self.metric = metric
+        self.reg = reg
+        self.n_neighborhood = n_neighborhood
+        self.mask = mask
+
+    def fit(self, X, Y):
+        '''Parameters
+        --------------
+        X: (n_samples, n_features) nd array
+            source data
+        Y: (n_samples, n_features) nd array
+            target data'''
+
+        # sparsity structure
+        n = len(X.T)
+        a = np.ones(n) * 1 / n
+        b = np.ones(n) * 1 / n
+
+        kern = find_kernel(X, Y, self.reg, find_n_neighborhood(
+            self.n_neighborhood, self.mask))
+        self.R = sparse_sinkhorn(a, b, kern).multiply(n)
+        return self
+
+    def transform(self, X):
+        """Transform X using optimal coupling computed during fit.
+        """
+        return X * self.R

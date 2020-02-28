@@ -16,6 +16,11 @@ from fmralign.alignment_methods import RidgeAlignment, Identity, Hungarian, \
     ScaledOrthogonalAlignment, OptimalTransportAlignment, DiagonalAlignment
 from fmralign._utils import _make_parcellation, piecewise_transform, _intersect_clustering_mask
 
+# n_pieces should be one
+# fit one_piece must be changed because it must include the mask as well
+# maybe use a parcellation as well. It could be useful
+# generate Xi Yi is useless
+
 
 def generate_Xi_Yi(labels, X, Y, masker, verbose):
     """ Generate source and target data X_i and Y_i for each piece i.
@@ -93,7 +98,7 @@ def fit_one_piece(X_i, Y_i, alignment_method):
     elif isinstance(alignment_method, (Identity, ScaledOrthogonalAlignment,
                                        RidgeAlignment, Hungarian,
                                        OptimalTransportAlignment,
-                                       DiagonalAlignment)):
+                                       DiagonalAlignment, SparseOptimalTransportAlignment)):
         alignment_algo = clone(alignment_method)
     try:
         alignment_algo.fit(X_i, Y_i)
